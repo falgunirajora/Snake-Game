@@ -13,6 +13,7 @@ let food = {
 
 let direction = null;
 let gameStarted = false;
+let isPaused = false;
 let gameInterval;
 
 // Audio elements
@@ -21,19 +22,26 @@ const moveSound = document.getElementById("moveSound");
 const foodSound = document.getElementById("foodSound");
 const gameOverSound = document.getElementById("gameOverSound");
 
-// Start game on first key press
+// Handle keyboard input
 document.addEventListener("keydown", startGameOnce, { once: true });
 
 function startGameOnce(e) {
   setDirection(e);
+  startGame();
+}
+
+function startGame() {
+  if (gameStarted) return;
   bgMusic.play();
   gameStarted = true;
+  isPaused = false;
   gameInterval = setInterval(draw, 150);
   document.addEventListener("keydown", setDirection);
+  document.getElementById("pauseBtn").innerText = "⏸️ Pause";
 }
 
 function setDirection(e) {
-  if (!gameStarted) return;
+  if (!gameStarted || isPaused) return;
 
   moveSound.currentTime = 0;
   moveSound.play();
@@ -42,6 +50,24 @@ function setDirection(e) {
   else if (e.key === "ArrowUp" && direction !== "DOWN") direction = "UP";
   else if (e.key === "ArrowRight" && direction !== "LEFT") direction = "RIGHT";
   else if (e.key === "ArrowDown" && direction !== "UP") direction = "DOWN";
+}
+
+function setDirectionByButton(dir) {
+  if (!gameStarted) {
+    setDirection({ key: dir });
+    startGame();
+    return;
+  }
+
+  if (isPaused) return;
+
+  moveSound.currentTime = 0;
+  moveSound.play();
+
+  if (dir === "LEFT" && direction !== "RIGHT") direction = "LEFT";
+  else if (dir === "UP" && direction !== "DOWN") direction = "UP";
+  else if (dir === "RIGHT" && direction !== "LEFT") direction = "RIGHT";
+  else if (dir === "DOWN" && direction !== "UP") direction = "DOWN";
 }
 
 function draw() {
@@ -81,7 +107,7 @@ function draw() {
 
   const newHead = { x: headX, y: headY };
 
-  // Collision with wall or self
+  // Collision detection
   if (
     headX < 0 || headX >= canvas.width ||
     headY < 0 || headY >= canvas.height ||
@@ -102,7 +128,7 @@ function draw() {
 
   snake.unshift(newHead);
 
-  // Display scores
+  // Draw scores
   ctx.fillStyle = "white";
   ctx.font = "20px Arial";
   ctx.fillText("Score: " + score, 10, 20);
@@ -111,4 +137,38 @@ function draw() {
 
 function collision(head, arr) {
   return arr.some(segment => head.x === segment.x && head.y === segment.y);
+}
+
+function restartGame() {
+  clearInterval(gameInterval);
+  bgMusic.pause();
+  score = 0;
+  snake = [{ x: 9 * box, y: 10 * box }];
+  direction = null;
+  gameStarted = false;
+  isPaused = false;
+  food = {
+    x: Math.floor(Math.random() * 19 + 1) * box,
+    y: Math.floor(Math.random() * 19 + 1) * box
+  };
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  document.removeEventListener("keydown", setDirection);
+  document.addEventListener("keydown", startGameOnce, { once: true });
+  document.getElementById("pauseBtn").innerText = "⏸️ Pause";
+}
+
+function togglePause() {
+  if (!gameStarted) return;
+
+  if (isPaused) {
+    gameInterval = setInterval(draw, 150);
+    bgMusic.play();
+    document.getElementById("pauseBtn").innerText = "⏸️ Pause";
+  } else {
+    clearInterval(gameInterval);
+    bgMusic.pause();
+    document.getElementById("pauseBtn").innerText = "▶️ Resume";
+  }
+
+  isPaused = !isPaused;
 }
