@@ -1,44 +1,40 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Snake Game</title>
   <link rel="stylesheet" href="style.css" />
 </head>
-
 <body>
-  <div class="container">
-    <div class="sidebar">
-      <h1 class="title">Classic Snake Game</h1>
-      <canvas id="gameCanvas" width="400" height="400"></canvas>
-
-      <!-- Start & Restart Buttons -->
-      <div class="game-buttons">
-        <button onclick="startGame()" id="startBtn">▶️ Start</button>
-        <button onclick="restartGame()">🔄 Restart</button>
-        <button onclick="togglePause()" id="pauseBtn">⏸️ Pause</button>
-      </div>
-
-      <!-- Controls -->
-      <div class="controls">
-        <button onclick="setDirectionByButton('UP')">⬆️</button>
-        <div>
-          <button onclick="setDirectionByButton('LEFT')">⬅️</button>
-          <button onclick="setDirectionByButton('DOWN')">⬇️</button>
-          <button onclick="setDirectionByButton('RIGHT')">➡️</button>
-        </div>
-      </div>
-
-      <!-- Audio files -->
-      <audio id="bgMusic" src="music.mp3" loop></audio>
-      <audio id="moveSound" src="move.mp3"></audio>
-      <audio id="foodSound" src="food.mp3"></audio>
-      <audio id="gameOverSound" src="gameover.mp3"></audio>
-
-      <script src="script.js"></script>
+  <div id="welcome-screen">
+    <img src="bg.jpg" alt="Welcome Background" class="background-img" />
+    <div class="overlay">
+      <h1>Welcome to Snake Game</h1>
+      <button id="start-btn">Start Game</button>
+      <button id="quit-btn">Quit Game</button>
     </div>
-</body>
+  </div>
 
+  <div id="game-container" class="hidden">
+    <div id="score">Score: 0 | High Score: 0</div>
+    <canvas id="gameCanvas" width="400" height="400"></canvas>
+    <div id="mobile-controls" class="hidden">
+      <button onclick="mobileControl('UP')">⬆️</button><br />
+      <button onclick="mobileControl('LEFT')">⬅️</button>
+      <button onclick="mobileControl('DOWN')">⬇️</button>
+      <button onclick="mobileControl('RIGHT')">➡️</button>
+    </div>
+    <button id="pause-btn">Pause</button>
+    <button id="resume-btn">Resume</button>
+  </div>
+
+  <!-- Audio Files -->
+  <audio id="start-sound" src="music.mp3"></audio>
+  <audio id="move-sound" src="move.mp3"></audio>
+  <audio id="food-sound" src="food.mp3"></audio>
+  <audio id="gameover-sound" src="gameover.mp3"></audio>
+
+  <script src="script.js"></script>
+</body>
 </html>

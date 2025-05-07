@@ -1,174 +1,179 @@
+// script.js - Snake Game with High Score Support
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
+const startBtn = document.getElementById("start-btn");
+const quitBtn = document.getElementById("quit-btn");
+const welcomeScreen = document.getElementById("welcome-screen");
+const gameContainer = document.getElementById("game-container");
+const scoreDisplay = document.getElementById("score");
+const pauseBtn = document.getElementById("pause-btn");
+const resumeBtn = document.getElementById("resume-btn");
+const mobileControls = document.getElementById("mobile-controls");
 
-const box = 20;
+const startSound = document.getElementById("start-sound");
+const moveSound = document.getElementById("move-sound");
+const foodSound = document.getElementById("food-sound");
+const gameoverSound = document.getElementById("gameover-sound");
+
+let snake = [{ x: 200, y: 200 }];
+let direction = "RIGHT";
+let food = { x: 100, y: 100 };
 let score = 0;
 let highScore = localStorage.getItem("highScore") || 0;
-
-let snake = [{ x: 9 * box, y: 10 * box }];
-let food = {
-  x: Math.floor(Math.random() * 19 + 1) * box,
-  y: Math.floor(Math.random() * 19 + 1) * box
-};
-
-let direction = null;
-let gameStarted = false;
-let isPaused = false;
 let gameInterval;
+let speed = 200;
+let isPaused = false;
 
-// Audio elements
-const bgMusic = document.getElementById("bgMusic");
-const moveSound = document.getElementById("moveSound");
-const foodSound = document.getElementById("foodSound");
-const gameOverSound = document.getElementById("gameOverSound");
-
-// Handle keyboard input
-document.addEventListener("keydown", startGameOnce, { once: true });
-
-function startGameOnce(e) {
-  setDirection(e);
+startBtn.addEventListener("click", () => {
+  welcomeScreen.classList.add("hidden");
+  gameContainer.classList.remove("hidden");
+  mobileControls.classList.remove("hidden");
+  startSound.play();
   startGame();
-}
+});
 
-function startGame() {
-  if (gameStarted) return;
-  bgMusic.play();
-  gameStarted = true;
-  isPaused = false;
-  gameInterval = setInterval(draw, 150);
-  document.addEventListener("keydown", setDirection);
-  document.getElementById("pauseBtn").innerText = "⏸️ Pause";
-}
+quitBtn.addEventListener("click", () => {
+  window.location.href = "https://www.google.com";
+});
 
-function setDirection(e) {
-  if (!gameStarted || isPaused) return;
-
-  moveSound.currentTime = 0;
-  moveSound.play();
-
-  if (e.key === "ArrowLeft" && direction !== "RIGHT") direction = "LEFT";
-  else if (e.key === "ArrowUp" && direction !== "DOWN") direction = "UP";
-  else if (e.key === "ArrowRight" && direction !== "LEFT") direction = "RIGHT";
-  else if (e.key === "ArrowDown" && direction !== "UP") direction = "DOWN";
-}
-
-function setDirectionByButton(dir) {
-  if (!gameStarted) {
-    setDirection({ key: dir });
-    startGame();
-    return;
+pauseBtn.addEventListener("click", () => {
+  if (!isPaused) {
+    clearInterval(gameInterval);
+    isPaused = true;
   }
+});
 
-  if (isPaused) return;
+resumeBtn.addEventListener("click", () => {
+  if (isPaused) {
+    gameInterval = setInterval(gameLoop, speed);
+    isPaused = false;
+  }
+});
 
-  moveSound.currentTime = 0;
-  moveSound.play();
-
-  if (dir === "LEFT" && direction !== "RIGHT") direction = "LEFT";
-  else if (dir === "UP" && direction !== "DOWN") direction = "UP";
-  else if (dir === "RIGHT" && direction !== "LEFT") direction = "RIGHT";
-  else if (dir === "DOWN" && direction !== "UP") direction = "DOWN";
+function drawSnake() {
+  ctx.fillStyle = "lime";
+  snake.forEach(part => ctx.fillRect(part.x, part.y, 20, 20));
 }
 
-function draw() {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-  // Draw snake
-  for (let i = 0; i < snake.length; i++) {
-    ctx.fillStyle = i === 0 ? "lime" : "green";
-    ctx.fillRect(snake[i].x, snake[i].y, box, box);
-  }
-
-  // Draw food
+function drawFood() {
   ctx.fillStyle = "red";
-  ctx.fillRect(food.x, food.y, box, box);
+  ctx.fillRect(food.x, food.y, 20, 20);
+}
 
-  let headX = snake[0].x;
-  let headY = snake[0].y;
+function moveSnake() {
+  const head = { ...snake[0] };
+  switch (direction) {
+    case "UP": head.y -= 20; break;
+    case "DOWN": head.y += 20; break;
+    case "LEFT": head.x -= 20; break;
+    case "RIGHT": head.x += 20; break;
+  }
+  snake.unshift(head);
 
-  // Move head
-  if (direction === "LEFT") headX -= box;
-  else if (direction === "UP") headY -= box;
-  else if (direction === "RIGHT") headX += box;
-  else if (direction === "DOWN") headY += box;
-
-  // Eat food
-  if (headX === food.x && headY === food.y) {
-    score++;
-    foodSound.currentTime = 0;
+  if (head.x === food.x && head.y === food.y) {
     foodSound.play();
-    food = {
-      x: Math.floor(Math.random() * 19 + 1) * box,
-      y: Math.floor(Math.random() * 19 + 1) * box
-    };
+    score++;
+    updateScore();
+    if (score % 5 === 0 && speed > 50) {
+      clearInterval(gameInterval);
+      speed -= 20;
+      gameInterval = setInterval(gameLoop, speed);
+    }
+    generateFood();
   } else {
     snake.pop();
   }
+}
 
-  const newHead = { x: headX, y: headY };
+function generateFood() {
+  food.x = Math.floor(Math.random() * 20) * 20;
+  food.y = Math.floor(Math.random() * 20) * 20;
+}
 
-  // Collision detection
+function checkCollision() {
+  const [head, ...body] = snake;
   if (
-    headX < 0 || headX >= canvas.width ||
-    headY < 0 || headY >= canvas.height ||
-    collision(newHead, snake)
+    head.x < 0 || head.x >= canvas.width ||
+    head.y < 0 || head.y >= canvas.height ||
+    body.some(part => part.x === head.x && part.y === head.y)
   ) {
-    clearInterval(gameInterval);
-    bgMusic.pause();
-    gameOverSound.play();
+    gameOver();
+  }
+}
 
-    if (score > highScore) {
-      highScore = score;
-      localStorage.setItem("highScore", highScore);
-    }
+function updateScore() {
+  if (score > highScore) {
+    highScore = score;
+    localStorage.setItem("highScore", highScore);
+  }
+  scoreDisplay.textContent = `Score: ${score} | High Score: ${highScore}`;
+}
 
-    alert(`Game Over!\nYour Score: ${score}`);
+function gameOver() {
+  gameoverSound.play();
+  ctx.fillStyle = "white";
+  ctx.font = "30px Arial";
+  ctx.fillText("Game Over", 120, 200);
+  clearInterval(gameInterval);
+  setTimeout(() => location.reload(), 3000);
+}
+
+function gameLoop() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  moveSnake();
+  checkCollision();
+  drawSnake();
+  drawFood();
+}
+
+function startGame() {
+  updateScore();
+  document.addEventListener("keydown", startOnKey, { once: true });
+}
+
+function startOnKey(e) {
+  switch (e.key) {
+    case "ArrowUp": direction = "UP"; break;
+    case "ArrowDown": direction = "DOWN"; break;
+    case "ArrowLeft": direction = "LEFT"; break;
+    case "ArrowRight": direction = "RIGHT"; break;
+    default:
+      document.addEventListener("keydown", startOnKey, { once: true });
+      return;
+  }
+  moveSound.play();
+  gameLoop();
+  gameInterval = setInterval(gameLoop, speed);
+  document.addEventListener("keydown", handleKeyDirection);
+}
+
+function handleKeyDirection(e) {
+  switch (e.key) {
+    case "ArrowUp": if (direction !== "DOWN") direction = "UP"; break;
+    case "ArrowDown": if (direction !== "UP") direction = "DOWN"; break;
+    case "ArrowLeft": if (direction !== "RIGHT") direction = "LEFT"; break;
+    case "ArrowRight": if (direction !== "LEFT") direction = "RIGHT"; break;
+  }
+  moveSound.play();
+}
+
+function mobileControl(dir) {
+  if (!gameInterval) {
+    direction = dir;
+    moveSound.play();
+    gameLoop();
+    gameInterval = setInterval(gameLoop, speed);
+    document.addEventListener("keydown", handleKeyDirection);
     return;
   }
 
-  snake.unshift(newHead);
-
-  // Draw scores
-  ctx.fillStyle = "white";
-  ctx.font = "20px Arial";
-  ctx.fillText("Score: " + score, 10, 20);
-  ctx.fillText("High Score: " + highScore, 240, 20);
-}
-
-function collision(head, arr) {
-  return arr.some(segment => head.x === segment.x && head.y === segment.y);
-}
-
-function restartGame() {
-  clearInterval(gameInterval);
-  bgMusic.pause();
-  score = 0;
-  snake = [{ x: 9 * box, y: 10 * box }];
-  direction = null;
-  gameStarted = false;
-  isPaused = false;
-  food = {
-    x: Math.floor(Math.random() * 19 + 1) * box,
-    y: Math.floor(Math.random() * 19 + 1) * box
-  };
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  document.removeEventListener("keydown", setDirection);
-  document.addEventListener("keydown", startGameOnce, { once: true });
-  document.getElementById("pauseBtn").innerText = "⏸️ Pause";
-}
-
-function togglePause() {
-  if (!gameStarted) return;
-
-  if (isPaused) {
-    gameInterval = setInterval(draw, 150);
-    bgMusic.play();
-    document.getElementById("pauseBtn").innerText = "⏸️ Pause";
-  } else {
-    clearInterval(gameInterval);
-    bgMusic.pause();
-    document.getElementById("pauseBtn").innerText = "▶️ Resume";
+  if (
+    (dir === "UP" && direction !== "DOWN") ||
+    (dir === "DOWN" && direction !== "UP") ||
+    (dir === "LEFT" && direction !== "RIGHT") ||
+    (dir === "RIGHT" && direction !== "LEFT")
+  ) {
+    direction = dir;
+    moveSound.play();
   }
-
-  isPaused = !isPaused;
 }
